@@ -7,10 +7,12 @@ import TestTransaction from "./Transaction/TestTransaction";
 function App() {
 
   return (
-    <div className="App">
+    <div className="bg-gray-900 min-h-screen">
       <Navbar />
-      <Transaction />
-      <TestTransaction />
+      <div className="p-4 space-y-8">
+        <TestTransaction />
+        <Transaction />
+      </div>
     </div>
   );
 }
