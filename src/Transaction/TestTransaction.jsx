@@ -12,7 +12,7 @@ function TestTransaction() {
         console.log("Connected status => ", connected);
         setStatus("");
 
-        if (!connected) {
+        if (connected) {
             alert("Please connect your wallet first!");
             return;
         }
@@ -66,7 +66,7 @@ function TestTransaction() {
                 </div>
                 <button
                     onClick={handleSend}
-                    disabled={!connected}
+                    disabled={connected}
                     className={`w-full py-3 rounded-lg font-semibold transition-colors ${connected ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 cursor-not-allowed'
                         }`}
                 >
