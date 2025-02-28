@@ -13,9 +13,9 @@ const Navbar = () => {
     return (
         <div>
             <TonConnectButton />
-            {
+            {/* {
                 userAddress ? <p>Your address: {userAddress}</p> : null
-            }
+            } */}
         </div>
     )
 }
