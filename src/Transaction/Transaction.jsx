@@ -20,13 +20,9 @@ const Transaction = () => {
         validUntil: Math.floor(Date.now() / 1000) + 60,
         messages: [
             {
-                address: "0QDzW-KvuT7dcCnJbD_DNWR_xNaLlIc0vSOowa19YDFqqYop",
-                amount: "20000000",
-            },
-            {
-                address: "0QDzW-KvuT7dcCnJbD_DNWR_xNaLlIc0vSOowa19YDFqqYop",
-                amount: "60000000",
-            },
+                address: "0QDzW-0QAlONwUibbHbvyhOjyBwwftqanrt2rP9Jhqo1XaVeZO6DZb",
+                amount: "1",
+            }
         ],
     };
 
