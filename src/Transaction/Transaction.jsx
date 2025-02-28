@@ -31,7 +31,7 @@ const Transaction = () => {
             {wallet ? (
                 <button
                     onClick={async () =>
-                        await tonConnectUI.sendTransaction(myTransaction)
+                        await tonConnectUI.sendTransaction(myTransaction, { testnet: true })
                     }
                 >
                     Send transaction
