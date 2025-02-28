@@ -63,7 +63,7 @@ function TestTransaction() {
                     style={{ marginBottom: '10px' }}
                 />
             </div>
-            <button onClick={handleSend} disabled={connected}>
+            <button onClick={handleSend}>
                 Send {amount} TON
             </button>
             {status && <p style={{ color: status.includes("failed") ? "red" : "green" }}>{status}</p>}
