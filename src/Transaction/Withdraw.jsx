@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { getHttpEndpoint } from "@orbs-network/ton-access";
 import { mnemonicToWalletKey } from "@ton/crypto";
-import { TonClient, WalletContractV4, internal, Address } from "@ton/ton";
+import { TonClient, WalletContractV4, internal, Address, WalletContractV5R1 } from "@ton/ton";
 
 function Withdraw() {
     const [mnemonic, setMnemonic] = useState(
         "tourist simple sphere ready ozone arrest faculty dad famous legal invest ethics letter hammer coast acquire apple leaf insect dawn whale grab fiction pizza"
     );
-    const [recipient, setRecipient] = useState("0QCiLgk_qgGXKOsY_QZj6-6c_ArgUL9QK4N7fQj4hbTb9nWi");
+    const [recipient, setRecipient] = useState(""); 
     const [amount, setAmount] = useState("0.05");
     const [message, setMessage] = useState("Hello");
     const [status, setStatus] = useState("");
-    const [walletAddress, setWalletAddress] = useState(""); // To display wallet address
+    const [walletAddress, setWalletAddress] = useState("");
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,51 +20,57 @@ function Withdraw() {
         try {
             setStatus("Preparing withdrawal...");
 
-            // Validate mnemonic
             if (!mnemonic || mnemonic.split(" ").length !== 24) {
                 setStatus("Error: Please enter a valid 24-word mnemonic");
                 return;
             }
 
-            // Validate TON address
             let parsedAddress;
             try {
                 parsedAddress = Address.parse(recipient);
             } catch (e) {
-                setStatus("Error: Please enter a valid TON recipient address (e.g., 0Q... or EQ...)");
+                setStatus("Error: Please enter a valid TON recipient address (e.g., EQ... or UQ...)");
                 return;
             }
 
-            // Validate amount
             const tonAmount = parseFloat(amount);
             if (isNaN(tonAmount) || tonAmount <= 0) {
                 setStatus("Error: Amount must be greater than 0");
                 return;
             }
 
-            
             const key = await mnemonicToWalletKey(mnemonic.split(" "));
-            const wallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 });
-            setWalletAddress(wallet.address.toString()); 
+            const wallet = WalletContractV5R1.create({ publicKey: key.publicKey, workchain: 0 });
+            setWalletAddress(wallet.address.toString());
 
-            // Connect to TON Testnet
-            const endpoint = await getHttpEndpoint({ network: "testnet" });
+            const endpoint = await getHttpEndpoint({ network: "mainnet" });
+            // const endpoint = "https://nameless-late-aura.ton-mainnet.quiknode.pro/0cb691e4246d7eda4a7858ef832c2f7d53c0a09f/";
+
+
             const client = new TonClient({ endpoint });
 
+
+            const balance = await client.getBalance(wallet.address);
+            console.log("Wallet balance:", balance.toString(), "nanoTON");
+            if (balance < tonAmount * 1e9 + 0.05 * 1e9) { 
+                setStatus("Error: Insufficient funds. Fund the wallet with more TON.");
+                return;
+            }
+
             // Check if wallet is deployed
-            // if (!await client.isContractDeployed(wallet.address)) {
+            // const isDeployed = await client.isContractDeployed(wallet.address);
+            // if (!isDeployed) {
             //     setStatus(
-            //         `Error: Wallet is not deployed on the Testnet. Please fund this address with test TON first: ${wallet.address.toString()}`
+            //         `Error: Wallet is not deployed on the Mainnet. Please fund this address with TON first: ${wallet.address.toString()}`
             //     );
             //     return;
             // }
 
-            // Open wallet contract
+            
             const walletContract = client.open(wallet);
             const seqno = await walletContract.getSeqno();
-            console.log("wallet => ", wallet.publicKey.toString());
-            
-            // Send transfer
+            console.log("Wallet public key:", key.publicKey.toString('hex'));
+
             setStatus("Sending withdrawal transaction...");
             await walletContract.sendTransfer({
                 secretKey: key.secretKey,
@@ -72,14 +78,14 @@ function Withdraw() {
                 messages: [
                     internal({
                         to: parsedAddress.toString(),
-                        value: tonAmount.toString(), // Amount in TON (string format)
+                        value: tonAmount.toString(), 
                         body: message,
                         bounce: false,
                     }),
                 ],
             });
 
-            // Wait for confirmation
+            
             let currentSeqno = seqno;
             while (currentSeqno === seqno) {
                 setStatus("Waiting for transaction to confirm...");
@@ -91,13 +97,20 @@ function Withdraw() {
             console.log("Transaction confirmed!");
         } catch (error) {
             console.error("Withdrawal failed:", error);
-            setStatus(`Withdrawal failed: ${error.message}`);
+            if (error.response && error.response.status === 500) {
+                setStatus("Withdrawal failed: TON network error (500). Check wallet deployment or try again later.");
+            } else {
+                setStatus(`Withdrawal failed: ${error.message}`);
+            }
         }
     };
 
     return (
         <div className="p-4 bg-gray-900 text-white min-h-screen flex flex-col items-center">
-            <h3 className="text-xl font-semibold mb-4">Withdraw TON (Testnet)</h3>
+            <h3 className="text-xl font-semibold mb-4">Withdraw TON (Mainnet)</h3>
+            <p className="text-yellow-400 text-sm mb-4 text-center">
+                Warning: This operates on the TON Mainnet with real funds. Proceed with caution!
+            </p>
             <div className="w-full max-w-md space-y-4">
                 <div>
                     <label className="block text-sm font-medium mb-1">Mnemonic (24 words)</label>
@@ -114,7 +127,7 @@ function Withdraw() {
                         type="text"
                         value={recipient}
                         onChange={(e) => setRecipient(e.target.value)}
-                        placeholder="Enter TON testnet address (e.g., 0Q...)"
+                        placeholder="Enter TON mainnet address (e.g., EQ...)"
                         className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
@@ -153,9 +166,7 @@ function Withdraw() {
                 )}
                 {status && (
                     <p
-                        className={`text-center mt-2 ${status.includes("failed") || status.includes("Error")
-                            ? 'text-red-500'
-                            : 'text-green-500'
+                        className={`text-center mt-2 ${status.includes("failed") || status.includes("Error") ? 'text-red-500' : 'text-green-500'
                             }`}
                     >
                         {status}
@@ -163,7 +174,7 @@ function Withdraw() {
                 )}
                 {status.includes("not deployed") && (
                     <p className="text-sm text-yellow-400 mt-2">
-                        Fund your wallet using the TON Testnet faucet: Send your wallet address to @testgiver_ton_bot on Telegram.
+                        Fund your wallet with TON from an exchange or another wallet to deploy it on the Mainnet.
                     </p>
                 )}
             </div>
